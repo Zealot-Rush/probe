@@ -1,25 +1,25 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// 暴露受保护的方法，允许渲染进程使用
+// Expose protected methods that allow the renderer process to use
 contextBridge.exposeInMainWorld('electronAPI', {
-  // 获取应用版本
+  // Get application version
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
   
-  // 显示消息框
+  // Show message box
   showMessageBox: (options: any): Promise<any> => ipcRenderer.invoke('show-message-box', options),
   
-  // 平台信息
+  // Platform information
   platform: process.platform,
   
-  // 版本信息
+  // Version information
   versions: process.versions,
 
-  // 文件操作
+  // File operations
   selectMp3File: (): Promise<string | null> => ipcRenderer.invoke('select-mp3-file'),
   selectOutputDirectory: (): Promise<string | null> => ipcRenderer.invoke('select-output-directory'),
   selectOutputFile: (defaultFileName: string): Promise<string | null> => ipcRenderer.invoke('select-output-file', defaultFileName),
 
-  // ID3 操作
+  // ID3 operations
   checkID3Available: (): Promise<{ success: boolean; data?: boolean; error?: string }> => 
     ipcRenderer.invoke('check-id3-available'),
   getMp3Metadata: (filePath: string): Promise<{ success: boolean; data?: any; error?: string }> => 
@@ -31,13 +31,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addChaptersToMp3: (params: { inputPath: string; outputPath: string; chapters: any[] }): Promise<{ success: boolean; error?: string }> => 
     ipcRenderer.invoke('add-chapters-to-mp3', params),
 
-  // 章节数据管理
+  // Chapter data management
   saveChaptersToFile: (params: { filePath: string; chapters: any[] }): Promise<{ success: boolean; error?: string }> => 
     ipcRenderer.invoke('save-chapters-to-file', params),
   loadChaptersFromFile: (filePath: string): Promise<{ success: boolean; data?: any[]; error?: string }> => 
     ipcRenderer.invoke('load-chapters-from-file', filePath),
 
-  // 图片操作
+  // Image operations
   selectImageFile: (): Promise<string | null> => ipcRenderer.invoke('select-image-file'),
   imageToBase64: (imagePath: string): Promise<{ success: boolean; data?: string; error?: string }> => 
     ipcRenderer.invoke('image-to-base64', imagePath),
@@ -45,4 +45,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('save-base64-image', params)
 });
 
-// 类型声明已移至 src/renderer/types/index.ts
+// Type declarations have been moved to src/renderer/types/index.ts

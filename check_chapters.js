@@ -6,40 +6,40 @@ async function checkChapters() {
   const mp3Path = path.join(__dirname, 'test', 'teahour2_6.mp3');
   
   try {
-    console.log('=== 检查 MP3 章节信息 ===');
-    console.log('文件路径:', mp3Path);
+    console.log('=== Check MP3 Chapter Information ===');
+    console.log('File path:', mp3Path);
     
-    // 检查文件是否存在
+    // Check if file exists
     if (!fs.existsSync(mp3Path)) {
-      console.error('❌ 文件不存在:', mp3Path);
+      console.error('❌ File does not exist:', mp3Path);
       return;
     }
     
-    // 获取文件大小
+    // Get file size
     const stats = fs.statSync(mp3Path);
-    console.log('文件大小:', (stats.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('File size:', (stats.size / 1024 / 1024).toFixed(2), 'MB');
     
-    // 直接使用 NodeID3 读取章节信息
-    console.log('\n=== 使用 NodeID3 直接读取章节 ===');
+    // Directly use NodeID3 to read chapter information
+    console.log('\n=== Using NodeID3 to Read Chapters Directly ===');
     
-    // 模拟 ID3Service 的章节解析逻辑
+    // Simulate ID3Service chapter parsing logic
     function parseChapters(tags) {
       const chapters = [];
       
       if (tags.chapter && Array.isArray(tags.chapter)) {
         for (const chapter of tags.chapter) {
-          // 处理 subFrames 结构
+          // Handle subFrames structure
           let title = `Chapter ${chapter.elementID}`;
           let image;
           let imageType;
 
           if (chapter.subFrames) {
-            // 从 subFrames 中获取标题
+            // Get title from subFrames
             if (chapter.subFrames.TIT2?.text) {
               title = chapter.subFrames.TIT2.text;
             }
             
-            // 从 subFrames 中获取图片
+            // Get image from subFrames
             if (chapter.subFrames.APIC?.data) {
               const apic = chapter.subFrames.APIC;
               const base64Data = Buffer.from(apic.data).toString('base64');
@@ -47,7 +47,7 @@ async function checkChapters() {
               imageType = 'base64';
             }
           } else if (chapter.tags) {
-            // 兼容旧的 tags 结构
+            // Compatible with old tags structure
             title = chapter.tags.title || title;
             if (chapter.tags.image && typeof chapter.tags.image === 'string') {
               image = chapter.tags.image;
@@ -55,7 +55,7 @@ async function checkChapters() {
             }
           }
 
-          // 转换时间格式
+          // Convert time format
           function millisecondsToTimeString(ms) {
             const totalSeconds = Math.floor(ms / 1000);
             const hours = Math.floor(totalSeconds / 3600);
@@ -80,33 +80,33 @@ async function checkChapters() {
       return chapters;
     }
     
-    // 读取原始标签数据
+    // Read raw tag data
     const rawTags = NodeID3.read(mp3Path);
     
-    console.log('所有标签键:', Object.keys(rawTags));
+    console.log('All tag keys:', Object.keys(rawTags));
     
-    // 解析章节
+    // Parse chapters
     const chapters = parseChapters(rawTags);
-    console.log('解析后的章节数量:', chapters.length);
+    console.log('Parsed chapter count:', chapters.length);
     
     if (chapters.length > 0) {
-      console.log('\n--- 解析后的章节详情 ---');
+      console.log('\n--- Parsed Chapter Details ---');
       chapters.forEach((chapter, index) => {
-        console.log(`\n章节 ${index + 1}:`);
-        console.log('  标题:', chapter.title);
-        console.log('  开始时间:', chapter.startTime);
-        console.log('  结束时间:', chapter.endTime || '未设置');
-        console.log('  图片:', chapter.image ? '有' : '无');
-        console.log('  图片类型:', chapter.imageType || '无');
+        console.log(`\nChapter ${index + 1}:`);
+        console.log('  Title:', chapter.title);
+        console.log('  Start time:', chapter.startTime);
+        console.log('  End time:', chapter.endTime || 'Not set');
+        console.log('  Image:', chapter.image ? 'Yes' : 'No');
+        console.log('  Image type:', chapter.imageType || 'None');
       });
     } else {
-      console.log('❌ 未找到章节信息');
+      console.log('❌ No chapter information found');
     }
     
     if (rawTags.chapter && Array.isArray(rawTags.chapter)) {
-      console.log('\n原始章节数据:');
+      console.log('\nRaw chapter data:');
       rawTags.chapter.forEach((chapter, index) => {
-        console.log(`\n--- 原始章节 ${index + 1} ---`);
+        console.log(`\n--- Raw Chapter ${index + 1} ---`);
         console.log('elementID:', chapter.elementID);
         console.log('startTimeMs:', chapter.startTimeMs);
         console.log('endTimeMs:', chapter.endTimeMs);
@@ -114,61 +114,61 @@ async function checkChapters() {
         console.log('endOffset:', chapter.endOffset);
         
         if (chapter.subFrames) {
-          console.log('subFrames 结构:');
-          console.log('  TIT2 (标题):', chapter.subFrames.TIT2);
-          console.log('  APIC (图片):', chapter.subFrames.APIC ? '有图片数据' : '无图片');
+          console.log('subFrames structure:');
+          console.log('  TIT2 (title):', chapter.subFrames.TIT2);
+          console.log('  APIC (image):', chapter.subFrames.APIC ? 'Has image data' : 'No image');
           if (chapter.subFrames.APIC) {
-            console.log('    图片MIME类型:', chapter.subFrames.APIC.mime);
-            console.log('    图片类型:', chapter.subFrames.APIC.type);
-            console.log('    图片描述:', chapter.subFrames.APIC.description);
-            console.log('    图片数据大小:', chapter.subFrames.APIC.data ? chapter.subFrames.APIC.data.length : '无');
+            console.log('    Image MIME type:', chapter.subFrames.APIC.mime);
+            console.log('    Image type:', chapter.subFrames.APIC.type);
+            console.log('    Image description:', chapter.subFrames.APIC.description);
+            console.log('    Image data size:', chapter.subFrames.APIC.data ? chapter.subFrames.APIC.data.length : 'None');
           }
         }
         
         if (chapter.tags) {
-          console.log('tags 结构:', chapter.tags);
+          console.log('tags structure:', chapter.tags);
         }
         
-        console.log('完整章节对象:', JSON.stringify(chapter, null, 2));
+        console.log('Complete chapter object:', JSON.stringify(chapter, null, 2));
       });
     } else {
-      console.log('❌ 未找到原始章节数据');
+      console.log('❌ No raw chapter data found');
     }
     
-    // 检查其他相关标签
-    console.log('\n=== 其他标签信息 ===');
-    console.log('标题:', rawTags.title || '无');
-    console.log('艺术家:', rawTags.artist || '无');
-    console.log('专辑:', rawTags.album || '无');
-    console.log('年份:', rawTags.year || '无');
-    console.log('流派:', rawTags.genre || '无');
-    console.log('评论:', rawTags.comment || '无');
+    // Check other related tags
+    console.log('\n=== Other Tag Information ===');
+    console.log('Title:', rawTags.title || 'None');
+    console.log('Artist:', rawTags.artist || 'None');
+    console.log('Album:', rawTags.album || 'None');
+    console.log('Year:', rawTags.year || 'None');
+    console.log('Genre:', rawTags.genre || 'None');
+    console.log('Comment:', rawTags.comment || 'None');
     
-    // 检查全局图片
+    // Check global image
     if (rawTags.image) {
-      console.log('\n=== 全局图片信息 ===');
-      console.log('图片类型:', rawTags.image.type);
-      console.log('图片描述:', rawTags.image.description);
-      console.log('图片MIME类型:', rawTags.image.mimeType);
-      console.log('图片数据大小:', rawTags.image.data ? rawTags.image.data.length : '无');
+      console.log('\n=== Global Image Information ===');
+      console.log('Image type:', rawTags.image.type);
+      console.log('Image description:', rawTags.image.description);
+      console.log('Image MIME type:', rawTags.image.mimeType);
+      console.log('Image data size:', rawTags.image.data ? rawTags.image.data.length : 'None');
     } else {
-      console.log('\n❌ 无全局图片');
+      console.log('\n❌ No global image');
     }
     
-    // 检查CTOC (Table of Contents)
+    // Check CTOC (Table of Contents)
     if (rawTags.tableOfContents) {
-      console.log('\n=== 目录表 (CTOC) ===');
-      console.log('CTOC数量:', rawTags.tableOfContents.length);
+      console.log('\n=== Table of Contents (CTOC) ===');
+      console.log('CTOC count:', rawTags.tableOfContents.length);
       rawTags.tableOfContents.forEach((ctoc, index) => {
         console.log(`CTOC ${index + 1}:`, ctoc);
       });
     } else {
-      console.log('\n❌ 无目录表');
+      console.log('\n❌ No table of contents');
     }
     
   } catch (error) {
-    console.error('❌ 检查失败:', error.message);
-    console.error('详细错误:', error);
+    console.error('❌ Check failed:', error.message);
+    console.error('Detailed error:', error);
   }
 }
 

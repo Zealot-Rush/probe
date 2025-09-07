@@ -4,15 +4,15 @@ import * as fs from 'fs';
 import { fileURLToPath } from 'url';
 import { ID3Service, ChapterInfo } from './id3-service.js';
 
-// 在ES模块中获取__dirname的替代方案
+// Alternative to get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 保持对窗口对象的全局引用，避免被垃圾回收
+// Keep a global reference to the window object to avoid garbage collection
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
-  // 创建浏览器窗口
+  // Create browser window
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -21,38 +21,38 @@ function createWindow(): void {
       contextIsolation: true,
       preload: path.resolve(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, '../assets/icon.png'), // 可选：应用图标
-    show: false, // 先不显示，等加载完成后再显示
+    icon: path.join(__dirname, '../assets/icon.png'), // Optional: app icon
+    show: false, // Don't show initially, wait for load to complete
     titleBarStyle: 'default'
   });
 
-  // 加载应用的 index.html
+  // Load the app's index.html
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
-  // 当窗口准备好时显示
+  // Show window when ready
   mainWindow.once('ready-to-show', () => {
     if (mainWindow) {
       mainWindow.show();
     }
   });
 
-  // 当窗口被关闭时触发
+  // Triggered when window is closed
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  // 开发环境下打开开发者工具
+  // Open dev tools in development environment
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools();
   }
 }
 
-// 当 Electron 完成初始化并准备创建浏览器窗口时调用此方法
+// Called when Electron finishes initialization and is ready to create browser windows
 app.whenReady().then(() => {
   createWindow();
 
-  // 在 macOS 上，当点击 dock 图标并且没有其他窗口打开时，
-  // 通常在应用程序中重新创建窗口
+  // On macOS, when clicking the dock icon and no other windows are open,
+  // usually recreate a window in the app
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -60,16 +60,16 @@ app.whenReady().then(() => {
   });
 });
 
-// 当所有窗口都被关闭时退出应用
+// Quit app when all windows are closed
 app.on('window-all-closed', () => {
-  // 在 macOS 上，除非用户用 Cmd + Q 确定地退出，
-  // 否则绝大部分应用及其菜单栏会保持激活
+  // On macOS, unless the user explicitly quits with Cmd + Q,
+  // most apps and their menu bar stay active
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// IPC 通信示例
+// IPC communication examples
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
@@ -78,16 +78,16 @@ ipcMain.handle('show-message-box', async (event, options) => {
   return await dialog.showMessageBox(mainWindow!, options);
 });
 
-// ID3 相关 IPC 处理
+// ID3 related IPC handling
 const id3Service = ID3Service.getInstance();
 
-// 选择MP3文件
+// Select MP3 file
 ipcMain.handle('select-mp3-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
-    title: '选择MP3文件',
+    title: 'Select MP3 File',
     filters: [
-      { name: 'MP3文件', extensions: ['mp3'] },
-      { name: '所有文件', extensions: ['*'] }
+      { name: 'MP3 Files', extensions: ['mp3'] },
+      { name: 'All Files', extensions: ['*'] }
     ],
     properties: ['openFile']
   });
@@ -98,10 +98,10 @@ ipcMain.handle('select-mp3-file', async () => {
   return null;
 });
 
-// 选择输出目录
+// Select output directory
 ipcMain.handle('select-output-directory', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
-    title: '选择输出目录',
+    title: 'Select Output Directory',
     properties: ['openDirectory', 'createDirectory']
   });
   
@@ -111,10 +111,10 @@ ipcMain.handle('select-output-directory', async () => {
   return null;
 });
 
-// 选择输出文件
+// Select output file
 ipcMain.handle('select-output-file', async (event, defaultFileName: string) => {
   const result = await dialog.showSaveDialog(mainWindow!, {
-    title: '选择输出文件位置',
+    title: 'Select Output File Location',
     defaultPath: defaultFileName,
     filters: [
       { name: 'MP3 Files', extensions: ['mp3'] },
@@ -128,7 +128,7 @@ ipcMain.handle('select-output-file', async (event, defaultFileName: string) => {
   return null;
 });
 
-// 获取MP3文件元数据
+// Get MP3 file metadata
 ipcMain.handle('get-mp3-metadata', async (event, filePath: string) => {
   try {
     const metadata = await id3Service.getMetadata(filePath);
@@ -138,7 +138,7 @@ ipcMain.handle('get-mp3-metadata', async (event, filePath: string) => {
   }
 });
 
-// 获取MP3文件时长
+// Get MP3 file duration
 ipcMain.handle('get-mp3-duration', async (event, filePath: string) => {
   try {
     const duration = await id3Service.getMp3Duration(filePath);
@@ -148,7 +148,7 @@ ipcMain.handle('get-mp3-duration', async (event, filePath: string) => {
   }
 });
 
-// 从MP3文件提取章节信息
+// Extract chapter information from MP3 file
 ipcMain.handle('extract-chapters', async (event, filePath: string) => {
   try {
     const chapters = await id3Service.extractChaptersFromMp3(filePath);
@@ -158,9 +158,9 @@ ipcMain.handle('extract-chapters', async (event, filePath: string) => {
   }
 });
 
-// 为MP3文件添加章节
+// Add chapters to MP3 file
 ipcMain.handle('add-chapters-to-mp3', async (event, { inputPath, outputPath, chapters }: { inputPath: string, outputPath: string, chapters: ChapterInfo[] }) => {
-  console.log('主进程: 开始添加章节到MP3', {
+  console.log('Main process: Starting to add chapters to MP3', {
     inputPath,
     outputPath,
     chaptersCount: chapters.length,
@@ -168,45 +168,45 @@ ipcMain.handle('add-chapters-to-mp3', async (event, { inputPath, outputPath, cha
   });
   
   try {
-    // 检查输入文件是否存在
+    // Check if input file exists
     if (!fs.existsSync(inputPath)) {
-      throw new Error(`输入文件不存在: ${inputPath}`);
+      throw new Error(`Input file does not exist: ${inputPath}`);
     }
     
-    // 检查输出目录是否存在
+    // Check if output directory exists
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) {
-      throw new Error(`输出目录不存在: ${outputDir}`);
+      throw new Error(`Output directory does not exist: ${outputDir}`);
     }
     
-    // 检查章节数据
+    // Check chapter data
     if (!chapters || chapters.length === 0) {
-      throw new Error('没有章节数据');
+      throw new Error('No chapter data');
     }
     
-    // 验证章节时间格式
+    // Validate chapter time format
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       if (!chapter.startTime) {
-        throw new Error(`章节 ${i + 1} 缺少开始时间`);
+        throw new Error(`Chapter ${i + 1} missing start time`);
       }
       if (!chapter.title) {
-        throw new Error(`章节 ${i + 1} 缺少标题`);
+        throw new Error(`Chapter ${i + 1} missing title`);
       }
     }
     
-    console.log('主进程: 开始调用ID3服务...');
+    console.log('Main process: Starting to call ID3 service...');
     await id3Service.addChaptersToMp3(inputPath, outputPath, chapters);
-    console.log('主进程: 章节添加成功');
+    console.log('Main process: Chapters added successfully');
     return { success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('主进程: 添加章节失败:', errorMessage);
+    console.error('Main process: Failed to add chapters:', errorMessage);
     return { success: false, error: errorMessage };
   }
 });
 
-// 检查ID3服务是否可用
+// Check if ID3 service is available
 ipcMain.handle('check-id3-available', async () => {
   try {
     const available = await id3Service.checkID3Available();
@@ -216,7 +216,7 @@ ipcMain.handle('check-id3-available', async () => {
   }
 });
 
-// 保存章节数据到文件
+// Save chapter data to file
 ipcMain.handle('save-chapters-to-file', async (event, { filePath, chapters }: { filePath: string, chapters: ChapterInfo[] }) => {
   try {
     const data = JSON.stringify(chapters, null, 2);
@@ -227,7 +227,7 @@ ipcMain.handle('save-chapters-to-file', async (event, { filePath, chapters }: { 
   }
 });
 
-// 从文件加载章节数据
+// Load chapter data from file
 ipcMain.handle('load-chapters-from-file', async (event, filePath: string) => {
   try {
     const data = await fs.promises.readFile(filePath, 'utf8');
@@ -238,14 +238,14 @@ ipcMain.handle('load-chapters-from-file', async (event, filePath: string) => {
   }
 });
 
-// 图片相关操作
-// 选择图片文件
+// Image related operations
+// Select image file
 ipcMain.handle('select-image-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow!, {
-    title: '选择图片文件',
+    title: 'Select Image File',
     filters: [
-      { name: '图片文件', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] },
-      { name: '所有文件', extensions: ['*'] }
+      { name: 'Image Files', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] },
+      { name: 'All Files', extensions: ['*'] }
     ],
     properties: ['openFile']
   });
@@ -256,7 +256,7 @@ ipcMain.handle('select-image-file', async () => {
   return null;
 });
 
-// 将图片转换为base64
+// Convert image to base64
 ipcMain.handle('image-to-base64', async (event, imagePath: string) => {
   try {
     const fs = await import('fs');
@@ -273,11 +273,11 @@ ipcMain.handle('image-to-base64', async (event, imagePath: string) => {
   }
 });
 
-// 保存base64图片
+// Save base64 image
 ipcMain.handle('save-base64-image', async (event, { base64Data, outputPath }: { base64Data: string, outputPath: string }) => {
   try {
     const fs = await import('fs');
-    // 移除data URL前缀
+    // Remove data URL prefix
     const base64 = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
     const buffer = Buffer.from(base64, 'base64');
     await fs.promises.writeFile(outputPath, buffer);

@@ -4,11 +4,11 @@ import * as path from 'path';
 
 export interface ChapterInfo {
   title: string;
-  startTime: string; // 格式: "00:00:00.000"
+  startTime: string; // Format: "00:00:00.000"
   endTime?: string;
-  image?: string; // 章节图片路径或base64数据
-  imageType?: 'file' | 'extracted' | 'base64'; // 图片类型
-  description?: string; // 章节描述
+  image?: string; // Chapter image path or base64 data
+  imageType?: 'file' | 'extracted' | 'base64'; // Image type
+  description?: string; // Chapter description
 }
 
 export interface ID3Chapter {
@@ -34,44 +34,44 @@ export class ID3Service {
   }
 
   /**
-   * 读取MP3文件的章节信息
+   * Read chapter information from MP3 file
    */
   public async readChaptersFromMp3(filePath: string): Promise<ChapterInfo[]> {
     try {
-      console.log('ID3服务: 开始读取MP3章节信息', { filePath });
+      console.log('ID3 Service: Starting to read MP3 chapter information', { filePath });
       
       const tags = NodeID3.read(filePath);
-      console.log('ID3服务: 读取到的标签', { tags });
+      console.log('ID3 Service: Read tags', { tags });
       
       const chapters: ChapterInfo[] = [];
       
       if (tags.chapter && Array.isArray(tags.chapter)) {
         for (const chapter of tags.chapter) {
-          // 处理 tags 结构
+          // Handle tags structure
           let title = `Chapter ${chapter.elementID}`;
           let image: string | undefined;
           let imageType: 'file' | 'extracted' | 'base64' | undefined;
 
           if (chapter.tags) {
-            // 从 tags 中获取标题
+            // Get title from tags
             title = chapter.tags.title || title;
             
-            // 从 tags 中获取图片
+            // Get image from tags
             if (chapter.tags.image) {
               if (typeof chapter.tags.image === 'object' && 'imageBuffer' in chapter.tags.image && Buffer.isBuffer(chapter.tags.image.imageBuffer)) {
-                // 处理 imageBuffer 格式
+                // Handle imageBuffer format
                 const base64Data = chapter.tags.image.imageBuffer.toString('base64');
                 const mimeType = chapter.tags.image.mime || 'image/jpeg';
                 image = `data:${mimeType};base64,${base64Data}`;
                 imageType = 'base64';
               } else if (typeof chapter.tags.image === 'string') {
-                // 处理字符串格式的图片
+                // Handle string format image
                 image = chapter.tags.image;
                 imageType = 'base64';
               }
             }
           } else if ((chapter as any).subFrames) {
-            // 兼容旧的 subFrames 结构
+            // Compatible with old subFrames structure
             if ((chapter as any).subFrames.TIT2?.text) {
               title = (chapter as any).subFrames.TIT2.text;
             }
@@ -96,16 +96,16 @@ export class ID3Service {
         }
       }
       
-      console.log('ID3服务: 提取到的章节', chapters);
+      console.log('ID3 Service: Extracted chapters', chapters);
       return chapters;
     } catch (error) {
-      console.error('ID3服务: 读取章节失败', error);
+      console.error('ID3 Service: Failed to read chapters', error);
       throw error;
     }
   }
 
   /**
-   * 为MP3文件添加章节信息
+   * Add chapter information to MP3 file
    */
   public async addChaptersToMp3(
     inputPath: string,
@@ -113,40 +113,40 @@ export class ID3Service {
     chapters: ChapterInfo[]
   ): Promise<void> {
     try {
-      console.log('ID3服务: 开始添加章节到MP3', {
+      console.log('ID3 Service: Starting to add chapters to MP3', {
         inputPath,
         outputPath,
         chaptersCount: chapters.length
       });
 
-      // 读取现有的标签
+      // Read existing tags
       const existingTags = NodeID3.read(inputPath) || {};
-      console.log('ID3服务: 现有标签', existingTags);
+      console.log('ID3 Service: Existing tags', existingTags);
 
-      // 转换章节格式 - 使用 tags 结构支持图片
+      // Convert chapter format - use tags structure to support images
       const id3Chapters: any[] = chapters.map((chapter, index) => {
         const startTimeMs = this.timeStringToMilliseconds(chapter.startTime);
-        let endTimeMs = startTimeMs + 60000; // 默认1分钟
+        let endTimeMs = startTimeMs + 60000; // Default 1 minute
 
         if (chapter.endTime) {
           endTimeMs = this.timeStringToMilliseconds(chapter.endTime);
         } else if (index < chapters.length - 1) {
-          // 使用下一个章节的开始时间
+          // Use next chapter's start time
           endTimeMs = this.timeStringToMilliseconds(chapters[index + 1].startTime);
         }
 
-        // 构建 tags 结构
+        // Build tags structure
         const tags: any = {
           title: chapter.title
         };
 
-        // 如果有图片，添加图片数据到 tags.image
+        // If there's an image, add image data to tags.image
         if (chapter.image) {
           let imageData: Buffer | undefined;
           let mimeType = 'image/jpeg';
 
           if (chapter.imageType === 'base64' || chapter.image.startsWith('data:')) {
-            // 处理base64数据
+            // Handle base64 data
             let base64Data = chapter.image;
             if (chapter.image.startsWith('data:')) {
               const [header, data] = chapter.image.split(',');
@@ -158,9 +158,9 @@ export class ID3Service {
             }
             imageData = Buffer.from(base64Data, 'base64');
           } else if (chapter.imageType === 'file' && fs.existsSync(chapter.image)) {
-            // 读取图片文件
+            // Read image file
             imageData = fs.readFileSync(chapter.image);
-            // 根据文件扩展名判断MIME类型
+            // Determine MIME type based on file extension
             const ext = chapter.image.toLowerCase().split('.').pop();
             if (ext === 'png') mimeType = 'image/png';
             else if (ext === 'gif') mimeType = 'image/gif';
@@ -185,9 +185,9 @@ export class ID3Service {
         };
       });
 
-      console.log('ID3服务: 转换后的ID3章节', id3Chapters);
+      console.log('ID3 Service: Converted ID3 chapters', id3Chapters);
 
-      // 创建CTOC帧（目录表）
+      // Create CTOC frame (Table of Contents)
       const ctocFrame = {
         elementID: 'toc',
         flags: {
@@ -200,12 +200,12 @@ export class ID3Service {
         }
       };
 
-      // 创建新的标签对象
+      // Create new tags object
       const newTags = {
         ...existingTags,
-        chapter: id3Chapters, // 使用新的 tags 结构
-        tableOfContents: [ctocFrame], // 添加CTOC帧
-        // 添加一些全局标签以提高兼容性
+        chapter: id3Chapters, // Use new tags structure
+        tableOfContents: [ctocFrame], // Add CTOC frame
+        // Add some global tags for better compatibility
         title: existingTags.title || 'Audio with Chapters',
         artist: existingTags.artist || 'Chapter Manager',
         album: existingTags.album || 'Chapters',
@@ -214,29 +214,29 @@ export class ID3Service {
         comment: existingTags.comment || { language: 'eng', text: `Contains ${chapters.length} chapters` },
       };
 
-      // 复制输入文件到输出路径
+      // Copy input file to output path
       fs.copyFileSync(inputPath, outputPath);
       
-      // 写入标签到新文件
+      // Write tags to new file
       const success = NodeID3.write(newTags, outputPath);
       
       if (success) {
-        console.log('ID3服务: 章节添加成功');
+        console.log('ID3 Service: Chapters added successfully');
       } else {
-        throw new Error('写入ID3标签失败');
+        throw new Error('Failed to write ID3 tags');
       }
     } catch (error) {
-      console.error('ID3服务: 添加章节失败', error);
+      console.error('ID3 Service: Failed to add chapters', error);
       throw error;
     }
   }
 
   /**
-   * 获取MP3文件的时长
+   * Get MP3 file duration
    */
   public async getMp3Duration(filePath: string): Promise<number> {
     try {
-      // 使用ffprobe获取时长，因为node-id3不直接提供时长信息
+      // Use ffprobe to get duration, as node-id3 doesn't directly provide duration information
       const { exec } = await import('child_process');
       const { promisify } = await import('util');
       const execAsync = promisify(exec);
@@ -247,33 +247,33 @@ export class ID3Service {
       
       return parseFloat(metadata.format.duration) || 0;
     } catch (error) {
-      console.error('ID3服务: 获取时长失败', error);
+      console.error('ID3 Service: Failed to get duration', error);
       throw error;
     }
   }
 
   /**
-   * 获取MP3文件的元数据信息
+   * Get MP3 file metadata information
    */
   public async getMetadata(filePath: string): Promise<any> {
     try {
       const tags = NodeID3.read(filePath);
       return { format: { duration: await this.getMp3Duration(filePath) }, chapters: tags.chapter || [] };
     } catch (error) {
-      console.error('ID3服务: 获取元数据失败', error);
+      console.error('ID3 Service: Failed to get metadata', error);
       throw error;
     }
   }
 
   /**
-   * 从MP3文件中提取章节信息
+   * Extract chapter information from MP3 file
    */
   public async extractChaptersFromMp3(filePath: string): Promise<ChapterInfo[]> {
     return await this.readChaptersFromMp3(filePath);
   }
 
   /**
-   * 将时间字符串转换为毫秒
+   * Convert time string to milliseconds
    */
   private timeStringToMilliseconds(timeStr: string): number {
     const parts = timeStr.split(':');
@@ -285,7 +285,7 @@ export class ID3Service {
   }
 
   /**
-   * 将毫秒转换为时间字符串
+   * Convert milliseconds to time string
    */
   private millisecondsToTimeString(ms: number): string {
     const totalSeconds = Math.floor(ms / 1000);
@@ -297,14 +297,14 @@ export class ID3Service {
   }
 
   /**
-   * 检查node-id3是否可用
+   * Check if node-id3 is available
    */
   public async checkID3Available(): Promise<boolean> {
     try {
-      // 简单的测试来检查库是否正常工作
+      // Simple test to check if the library is working properly
       return typeof NodeID3.read === 'function' && typeof NodeID3.write === 'function';
     } catch (error) {
-      console.error('ID3服务: 检查可用性失败', error);
+      console.error('ID3 Service: Failed to check availability', error);
       return false;
     }
   }

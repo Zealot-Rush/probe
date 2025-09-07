@@ -5,46 +5,46 @@ async function verifyChapters() {
   const mp3Path = path.join(__dirname, 'test', 'nochapter_with_chapters.mp3');
   
   try {
-    console.log('=== 验证生成的MP3章节信息 ===');
-    console.log('文件路径:', mp3Path);
+    console.log('=== Verifying Generated MP3 Chapter Information ===');
+    console.log('File path:', mp3Path);
     
     const rawTags = NodeID3.read(mp3Path);
     
-    console.log('\n=== 所有标签键 ===');
-    console.log('标签键:', Object.keys(rawTags));
+    console.log('\n=== All Tag Keys ===');
+    console.log('Tag keys:', Object.keys(rawTags));
     
-    // 检查章节数据
+    // Check chapter data
     if (rawTags.chapter && Array.isArray(rawTags.chapter)) {
-      console.log('\n=== 章节详细信息 ===');
-      console.log('章节总数:', rawTags.chapter.length);
+      console.log('\n=== Chapter Details ===');
+      console.log('Total chapters:', rawTags.chapter.length);
       
       rawTags.chapter.forEach((chapter, index) => {
-        console.log(`\n--- 章节 ${index + 1} ---`);
+        console.log(`\n--- Chapter ${index + 1} ---`);
         console.log('elementID:', chapter.elementID);
         console.log('startTimeMs:', chapter.startTimeMs);
         console.log('endTimeMs:', chapter.endTimeMs);
         
         if (chapter.tags) {
-          console.log('标题:', chapter.tags.title);
+          console.log('Title:', chapter.tags.title);
           if (chapter.tags.image) {
-            console.log('✅ 发现图片数据!');
-            console.log('MIME类型:', chapter.tags.image.mime);
-            console.log('图片类型:', chapter.tags.image.type);
-            console.log('图片描述:', chapter.tags.image.description);
-            console.log('图片数据大小:', chapter.tags.image.imageBuffer ? chapter.tags.image.imageBuffer.length : '无');
+            console.log('✅ Found image data!');
+            console.log('MIME type:', chapter.tags.image.mime);
+            console.log('Image type:', chapter.tags.image.type);
+            console.log('Image description:', chapter.tags.image.description);
+            console.log('Image data size:', chapter.tags.image.imageBuffer ? chapter.tags.image.imageBuffer.length : 'None');
           } else {
-            console.log('❌ 没有图片数据');
+            console.log('❌ No image data');
           }
         }
       });
     } else {
-      console.log('\n❌ 未找到章节数据');
+      console.log('\n❌ No chapter data found');
     }
     
-    // 检查CTOC
+    // Check CTOC
     if (rawTags.tableOfContents) {
-      console.log('\n=== 目录表 (CTOC) ===');
-      console.log('CTOC数量:', rawTags.tableOfContents.length);
+      console.log('\n=== Table of Contents (CTOC) ===');
+      console.log('CTOC count:', rawTags.tableOfContents.length);
       rawTags.tableOfContents.forEach((ctoc, index) => {
         console.log(`CTOC ${index + 1}:`, {
           elementID: ctoc.elementID,
@@ -54,17 +54,17 @@ async function verifyChapters() {
       });
     }
     
-    // 检查其他标签
-    console.log('\n=== 其他标签信息 ===');
-    console.log('标题:', rawTags.title || '无');
-    console.log('艺术家:', rawTags.artist || '无');
-    console.log('专辑:', rawTags.album || '无');
-    console.log('年份:', rawTags.year || '无');
-    console.log('流派:', rawTags.genre || '无');
+    // Check other tags
+    console.log('\n=== Other Tag Information ===');
+    console.log('Title:', rawTags.title || 'None');
+    console.log('Artist:', rawTags.artist || 'None');
+    console.log('Album:', rawTags.album || 'None');
+    console.log('Year:', rawTags.year || 'None');
+    console.log('Genre:', rawTags.genre || 'None');
     
   } catch (error) {
-    console.error('❌ 验证失败:', error.message);
-    console.error('详细错误:', error);
+    console.error('❌ Verification failed:', error.message);
+    console.error('Detailed error:', error);
   }
 }
 
