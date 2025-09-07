@@ -1,0 +1,77 @@
+{
+  "name": "probe",
+  "version": "0.0.1",
+  "description": "This app can help you to add the chapters to a mp3 file",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:main && npm run build:preload && npm run build:renderer",
+    "build:main": "tsc --project tsconfig.main.json",
+    "build:preload": "tsc --project tsconfig.preload.json",
+    "build:renderer": "webpack --mode production",
+    "build:watch": "npm run build:main:watch & npm run build:preload:watch & npm run build:renderer:watch",
+    "build:main:watch": "tsc --project tsconfig.main.json --watch",
+    "build:preload:watch": "tsc --project tsconfig.preload.json --watch",
+    "build:renderer:watch": "webpack --mode development --watch",
+    "start": "npm run build && electron .",
+    "dev": "npm run build:main && npm run build:preload && webpack serve --mode development & electron . --dev",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "clean": "rimraf dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Zealot-Rush",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/node": "^20.0.0",
+    "autoprefixer": "^10.4.21",
+    "css-loader": "^7.1.2",
+    "electron": "^38.0.0",
+    "electron-builder": "^24.0.0",
+    "html-webpack-plugin": "^5.6.4",
+    "postcss": "^8.5.6",
+    "postcss-loader": "^8.2.0",
+    "rimraf": "^5.0.10",
+    "style-loader": "^4.0.0",
+    "tailwindcss": "^3.4.17",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.0.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  },
+  "build": {
+    "appId": "com.zealot-rush.probe",
+    "productName": "Probe",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "renderer/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  },
+  "dependencies": {
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "node-id3": "^0.2.9",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  }
+}
