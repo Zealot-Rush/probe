@@ -111,6 +111,23 @@ ipcMain.handle('select-output-directory', async () => {
   return null;
 });
 
+// 选择输出文件
+ipcMain.handle('select-output-file', async (event, defaultFileName: string) => {
+  const result = await dialog.showSaveDialog(mainWindow!, {
+    title: '选择输出文件位置',
+    defaultPath: defaultFileName,
+    filters: [
+      { name: 'MP3 Files', extensions: ['mp3'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+  
+  if (!result.canceled && result.filePath) {
+    return result.filePath;
+  }
+  return null;
+});
+
 // 获取MP3文件元数据
 ipcMain.handle('get-mp3-metadata', async (event, filePath: string) => {
   try {

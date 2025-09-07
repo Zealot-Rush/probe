@@ -5,11 +5,6 @@ import { useElectronAPI } from '../hooks/useElectronAPI';
 interface ChapterManagerProps {
   chapters: ChapterInfo[];
   onChaptersChange: (chapters: ChapterInfo[]) => void;
-  onExtractChapters: () => void;
-  onSaveChapters: () => void;
-  onLoadChapters: () => void;
-  onExtractThumbnails: () => void;
-  isExtracting: boolean;
   selectedFile?: string | null;
   audioDuration?: number; // 音频文件总时长（秒）
 }
@@ -17,11 +12,6 @@ interface ChapterManagerProps {
 export const ChapterManager: React.FC<ChapterManagerProps> = ({
   chapters,
   onChaptersChange,
-  onExtractChapters,
-  onSaveChapters,
-  onLoadChapters,
-  onExtractThumbnails,
-  isExtracting,
   selectedFile,
   audioDuration,
 }) => {
@@ -134,43 +124,6 @@ export const ChapterManager: React.FC<ChapterManagerProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">章节管理</h3>
       
-      {/* 控制按钮 */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={onExtractChapters}
-          disabled={isExtracting}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isExtracting ? '提取中...' : '提取现有章节'}
-        </button>
-        <button
-          onClick={onExtractThumbnails}
-          disabled={isExtracting || !selectedFile || chapters.length === 0}
-          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isExtracting ? '提取中...' : '提取缩略图'}
-        </button>
-        <button
-          onClick={onSaveChapters}
-          disabled={chapters.length === 0}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          保存章节
-        </button>
-        <button
-          onClick={onLoadChapters}
-          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-        >
-          加载章节
-        </button>
-        <button
-          onClick={() => onChaptersChange([])}
-          disabled={chapters.length === 0}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          清空章节
-        </button>
-      </div>
 
       {/* 添加新章节 */}
       <div className="bg-gray-50 rounded-md p-4 mb-4">

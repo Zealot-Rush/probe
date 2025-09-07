@@ -25,6 +25,7 @@ export interface ElectronAPI {
   // 文件操作
   selectMp3File: () => Promise<string | null>;
   selectOutputDirectory: () => Promise<string | null>;
+  selectOutputFile: (defaultFileName: string) => Promise<string | null>;
   
   // ID3 操作
   checkID3Available: () => Promise<{ success: boolean; data?: boolean; error?: string }>;

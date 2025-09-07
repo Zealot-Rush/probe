@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 文件操作
   selectMp3File: (): Promise<string | null> => ipcRenderer.invoke('select-mp3-file'),
   selectOutputDirectory: (): Promise<string | null> => ipcRenderer.invoke('select-output-directory'),
+  selectOutputFile: (defaultFileName: string): Promise<string | null> => ipcRenderer.invoke('select-output-file', defaultFileName),
 
   // ID3 操作
   checkID3Available: (): Promise<{ success: boolean; data?: boolean; error?: string }> => 

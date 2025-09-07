@@ -9,7 +9,6 @@ export const App: React.FC = () => {
 
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [chapters, setChapters] = useState<ChapterInfo[]>([]);
-  const [outputDir, setOutputDir] = useState<string | null>(null);
   const [fileInfo, setFileInfo] = useState<{
     name: string;
     duration: number;
@@ -17,6 +16,10 @@ export const App: React.FC = () => {
   } | null>(null);
   const [isFFmpegAvailable, setIsFFmpegAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [extractionStatus, setExtractionStatus] = useState<{
+    type: 'success' | 'info' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
 
   // 检查FFmpeg可用性
   useEffect(() => {
@@ -39,10 +42,16 @@ export const App: React.FC = () => {
   // 处理文件选择
   const handleFileSelected = async (filePath: string) => {
     setSelectedFile(filePath);
+    setIsLoading(true);
+    setExtractionStatus({ type: null, message: '' });
     
-    // 获取文件信息
-    if (!api) return;
+    if (!api) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      // 获取文件信息
       const durationResult = await api.getMp3Duration(filePath);
       if (durationResult?.success && durationResult.data) {
         const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || 'Unknown';
@@ -52,80 +61,78 @@ export const App: React.FC = () => {
           size: 0, // 可以添加文件大小获取逻辑
         });
       }
-    } catch (error) {
-      console.error('获取文件信息失败:', error);
-    }
-  };
-
-  // 提取现有章节
-  const handleExtractChapters = async () => {
-    if (!selectedFile || !api) return;
-    
-    try {
-      const result = await api.extractChapters(selectedFile);
-      if (result?.success && result.data) {
-        setChapters(result.data);
+      
+      // 自动提取章节信息
+      console.log('开始提取章节信息...');
+      const chaptersResult = await api.extractChapters(filePath);
+      console.log('章节提取结果:', chaptersResult);
+      
+      if (chaptersResult?.success && chaptersResult.data) {
+        const extractedChapters = chaptersResult.data;
+        console.log('成功提取到章节:', extractedChapters);
+        
+        if (extractedChapters.length > 0) {
+          setChapters(extractedChapters);
+          setExtractionStatus({ 
+            type: 'success', 
+            message: `成功提取到 ${extractedChapters.length} 个章节` 
+          });
+          console.log('章节已自动加载到界面');
+        } else {
+          console.log('文件中没有找到章节信息');
+          setChapters([]); // 清空现有章节
+          setExtractionStatus({ 
+            type: 'info', 
+            message: '文件中没有找到章节信息，您可以手动添加章节' 
+          });
+        }
+      } else {
+        console.log('章节提取失败或文件中没有章节:', chaptersResult?.error);
+        setChapters([]); // 清空现有章节
+        setExtractionStatus({ 
+          type: 'error', 
+          message: `章节提取失败: ${chaptersResult?.error || '未知错误'}` 
+        });
       }
     } catch (error) {
-      console.error('提取章节失败:', error);
+      console.error('处理文件失败:', error);
+      setChapters([]); // 清空现有章节
+      setExtractionStatus({ 
+        type: 'error', 
+        message: `处理文件失败: ${error instanceof Error ? error.message : String(error)}` 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 保存章节到文件
-  const handleSaveChapters = async () => {
-    if (!api || chapters.length === 0) return;
-    
-    try {
-      const result = await api.selectOutputDirectory();
-      if (result) {
-        const fileName = `chapters_${Date.now()}.json`;
-        const filePath = `${result}/${fileName}`;
-        await api.saveChaptersToFile({ filePath, chapters });
-        alert('章节保存成功！');
-      }
-    } catch (error) {
-      console.error('保存章节失败:', error);
-    }
-  };
-
-  // 加载章节文件
-  const handleLoadChapters = async () => {
-    if (!api) return;
-    
-    try {
-      // 这里需要添加文件选择逻辑
-      // 暂时使用示例数据
-      const sampleChapters: ChapterInfo[] = [
-        { title: '第一章', startTime: '00:00:00.000' },
-        { title: '第二章', startTime: '00:05:30.000' },
-        { title: '第三章', startTime: '00:10:15.000' },
-      ];
-      setChapters(sampleChapters);
-    } catch (error) {
-      console.error('加载章节失败:', error);
-    }
-  };
-
-  // 提取章节缩略图
 
   // 添加章节到MP3文件
   const handleAddChaptersToMp3 = async () => {
-    if (!selectedFile || !outputDir || chapters.length === 0 || !api) {
-      console.log('添加章节失败: 缺少必要参数', { selectedFile, outputDir, chaptersLength: chapters.length });
-      alert('请确保已选择MP3文件、输出目录和章节数据！');
+    if (!selectedFile || chapters.length === 0 || !api) {
+      console.log('添加章节失败: 缺少必要参数', { selectedFile, chaptersLength: chapters.length });
+      alert('请确保已选择MP3文件并添加章节数据！');
       return;
     }
     
-    console.log('开始添加章节到MP3文件...', {
-      inputPath: selectedFile,
-      outputDir,
-      chaptersCount: chapters.length,
-      chapters: chapters
-    });
-    
     try {
-      const outputPath = `${outputDir}/output_with_chapters.mp3`;
-      console.log('输出路径:', outputPath);
+      // 生成默认文件名
+      const inputFileName = selectedFile.split('\\').pop() || selectedFile.split('/').pop() || 'output';
+      const nameWithoutExt = inputFileName.replace(/\.[^/.]+$/, '');
+      const defaultFileName = `${nameWithoutExt}_with_chapters.mp3`;
+      
+      // 让用户选择输出位置
+      const outputPath = await api.selectOutputFile(defaultFileName);
+      if (!outputPath) {
+        return; // 用户取消了选择
+      }
+      
+      console.log('开始添加章节到MP3文件...', {
+        inputPath: selectedFile,
+        outputPath,
+        chaptersCount: chapters.length,
+        chapters: chapters
+      });
       
       const result = await api.addChaptersToMp3({ inputPath: selectedFile, outputPath, chapters });
       console.log('添加章节结果:', result);
@@ -144,19 +151,6 @@ export const App: React.FC = () => {
   };
 
 
-  // 选择输出目录
-  const handleSelectOutputDir = async () => {
-    if (!api) return;
-    
-    try {
-      const result = await api.selectOutputDirectory();
-      if (result) {
-        setOutputDir(result);
-      }
-    } catch (error) {
-      console.error('选择输出目录失败:', error);
-    }
-  };
 
   if (!isReady) {
     return (
@@ -198,6 +192,7 @@ export const App: React.FC = () => {
           <FileSelector
             onFileSelected={handleFileSelected}
             selectedFile={selectedFile}
+            isLoading={isLoading}
           />
           
           {/* 文件信息 */}
@@ -222,6 +217,40 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
+          
+          {/* 处理状态指示器 */}
+          {isLoading && (
+            <div className="mt-4 bg-blue-50 rounded-lg border border-blue-200 p-4">
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+                <span className="text-blue-700 text-sm">正在提取章节信息...</span>
+              </div>
+            </div>
+          )}
+          
+          {/* 章节提取状态消息 */}
+          {extractionStatus.type && !isLoading && (
+            <div className={`mt-4 rounded-lg border p-4 ${
+              extractionStatus.type === 'success' ? 'bg-green-50 border-green-200' :
+              extractionStatus.type === 'error' ? 'bg-red-50 border-red-200' :
+              'bg-yellow-50 border-yellow-200'
+            }`}>
+              <div className="flex items-center">
+                <div className={`w-4 h-4 rounded-full mr-3 ${
+                  extractionStatus.type === 'success' ? 'bg-green-500' :
+                  extractionStatus.type === 'error' ? 'bg-red-500' :
+                  'bg-yellow-500'
+                }`}></div>
+                <span className={`text-sm ${
+                  extractionStatus.type === 'success' ? 'text-green-700' :
+                  extractionStatus.type === 'error' ? 'text-red-700' :
+                  'text-yellow-700'
+                }`}>
+                  {extractionStatus.message}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 章节管理 */}
@@ -229,11 +258,6 @@ export const App: React.FC = () => {
           <ChapterManager
             chapters={chapters}
             onChaptersChange={setChapters}
-            onExtractChapters={handleExtractChapters}
-            onSaveChapters={handleSaveChapters}
-            onLoadChapters={handleLoadChapters}
-            onExtractThumbnails={() => {}}
-            isExtracting={isLoading}
             selectedFile={selectedFile}
             audioDuration={fileInfo?.duration}
           />
@@ -243,33 +267,12 @@ export const App: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">操作</h3>
           
-          {/* 输出目录选择 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              输出目录
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={outputDir || ''}
-                placeholder="请选择输出目录..."
-                readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-              <button
-                onClick={handleSelectOutputDir}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                选择目录
-              </button>
-            </div>
-          </div>
 
           {/* 操作按钮 */}
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleAddChaptersToMp3}
-              disabled={!selectedFile || !outputDir || chapters.length === 0 || isLoading}
+              disabled={!selectedFile || chapters.length === 0 || isLoading}
               className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? '处理中...' : '添加章节到文件'}
